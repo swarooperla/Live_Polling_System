@@ -17,7 +17,7 @@ const app = express()
 
 // CORS middleware for REST API
 app.use(cors({
-  origin: "*", // TODO: replace with frontend URL in production
+  origin: "https://live-polling-system-dusky.vercel.app",
   methods: ["GET", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }))

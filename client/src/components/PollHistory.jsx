@@ -2,11 +2,13 @@ import React, { useEffect, useState } from "react"
 import axios from "axios"
 import "./PollHistory.css"
 
+const BACKEND_URL = "https://live-polling-system-2-itph.onrender.com"
+
 export default function PollHistory() {
   const [polls, setPolls] = useState([])
 
   useEffect(() => {
-    axios.get("/api/polls").then(res => {
+    axios.get(`${BACKEND_URL}/api/polls`).then(res => {
       if (Array.isArray(res.data)) {
         setPolls(res.data)
       } else if (res.data && Array.isArray(res.data.polls)) {
