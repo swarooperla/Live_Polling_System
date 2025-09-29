@@ -5,6 +5,8 @@ import axios from "axios"
 import { toast } from "react-toastify"
 import ConfirmModal from "./ConfirmModal"
 
+const BACKEND_URL = "https://live-polling-system-2-itph.onrender.com"
+
 export default function TeacherDashboard() {
   const navigate = useNavigate()
   const [modalOpen, setModalOpen] = useState(false)
@@ -23,18 +25,18 @@ export default function TeacherDashboard() {
   const handleConfirm = async () => {
     if (modalType === "students") {
       try {
-        const res = await axios.delete("/api/students")
+        const res = await axios.delete(`${BACKEND_URL}/api/students`)
         if (res.data.success) {
           toast.success(res.data.message)
         } else {
           toast.error(res.data.error || "Failed to delete students.")
-        }
+        }   
       } catch {
         toast.error("Failed to delete students.")
       }
     } else if (modalType === "polls") {
       try {
-        const res = await axios.delete("/api/polls")
+        const res = await axios.delete(`${BACKEND_URL}/api/polls`)
         if (res.data.success) {
           toast.success(res.data.message)
         } else {
