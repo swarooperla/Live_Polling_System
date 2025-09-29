@@ -16,12 +16,28 @@ dotenv.config()
 const app = express()
 
 // CORS middleware for REST API
+const allowedOrigins = [
+  "https://live-polling-system-dusky.vercel.app", // deployed frontend
+  "http://localhost:5173",                       // local vite
+  "http://localhost:3000"                        // CRA (just in case)
+];
+
 app.use(cors({
-  origin: "https://live-polling-system-dusky.vercel.app",
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: ["GET", "POST", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}))
-app.use(express.json())
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
+app.use(express.json());
+
 
 // ---------------------- SERVER SETUP ----------------------
 const server = http.createServer(app)
