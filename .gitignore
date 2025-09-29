@@ -1,0 +1,20 @@
+# Node.js dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Env files (ignore everywhere)
+*.env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Editor configs
+.vscode/
+.idea/
+*.swp
