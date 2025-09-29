@@ -14,16 +14,23 @@ dotenv.config()
 
 // ---------------------- APP SETUP ----------------------
 const app = express()
-app.use(cors())
+
+// CORS middleware for REST API
+app.use(cors({
+  origin: "*", // TODO: replace with frontend URL in production
+  methods: ["GET", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}))
 app.use(express.json())
 
+// ---------------------- SERVER SETUP ----------------------
 const server = http.createServer(app)
 
 // ---------------------- SOCKET.IO SETUP ----------------------
 const io = new Server(server, {
   cors: {
     origin: "*", // TODO: restrict to frontend URL in production
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST", "DELETE", "OPTIONS"]
   }
 })
 
@@ -38,7 +45,6 @@ mongoose.connect(process.env.MONGO_URI, {
 io.on("connection", (socket) => {
   console.log("New client connected:", socket.id)
 
-  // Register student with unique name
   socket.on("register_student", async (name, callback) => {
     try {
       const exists = await Student.findOne({ name })
@@ -48,35 +54,29 @@ io.on("connection", (socket) => {
       await student.save()
 
       callback({ success: true, student })
-  // Emit updated participant list to all clients
-  const students = await Student.find({}, 'name')
-  io.emit("participant_names", students.map(s => s.name))
+
+      const students = await Student.find({}, 'name')
+      io.emit("participant_names", students.map(s => s.name))
     } catch (err) {
       callback({ error: "Server error" })
     }
   })
 
-  // Teacher creates a poll
   socket.on("create_poll", async (pollData, callback) => {
     try {
-      // Check for active poll before creating a new one
       const activePoll = await Poll.findOne({ isActive: true })
       if (activePoll) {
-        // Do not end the current poll, just send error
         if (callback) callback({ success: false, error: "Wait till the current poll completes" })
         return
       }
 
-      const poll = new Poll({
-        ...pollData,
-        timeLimit: pollData.timer || 60
-      })
+      const poll = new Poll({ ...pollData, timeLimit: pollData.timer || 60 })
       await poll.save()
 
-      io.emit("new_poll", poll) // notify everyone
-  // Emit current participant names to all clients
-  const students = await Student.find({}, 'name')
-  io.emit("participant_names", students.map(s => s.name))
+      io.emit("new_poll", poll)
+
+      const students = await Student.find({}, 'name')
+      io.emit("participant_names", students.map(s => s.name))
       callback({ success: true, poll })
     } catch (err) {
       console.error("Create poll error:", err)
@@ -84,7 +84,6 @@ io.on("connection", (socket) => {
     }
   })
 
-  // Student submits answer
   socket.on("submit_answer", async ({ pollId, choiceIndex }, callback) => {
     try {
       const poll = await Poll.findById(pollId)
@@ -93,14 +92,13 @@ io.on("connection", (socket) => {
       poll.choices[choiceIndex].votes += 1
       await poll.save()
 
-      io.emit("poll_update", poll) // notify everyone
+      io.emit("poll_update", poll)
       callback({ success: true })
     } catch (err) {
       callback({ error: "Failed to submit answer" })
     }
   })
 
-  // Teacher ends poll
   socket.on("end_poll", async (pollId, callback) => {
     try {
       const poll = await Poll.findById(pollId)
@@ -116,7 +114,6 @@ io.on("connection", (socket) => {
     }
   })
 
-  // Clear all active polls (for debugging/management)
   socket.on("clear_active_polls", async (callback) => {
     try {
       await Poll.updateMany({ isActive: true }, { isActive: false })
@@ -127,7 +124,6 @@ io.on("connection", (socket) => {
     }
   })
 
-  // Get current active poll
   socket.on("get_active_poll", async (callback) => {
     try {
       const activePoll = await Poll.findOne({ isActive: true })
@@ -137,7 +133,6 @@ io.on("connection", (socket) => {
     }
   })
 
-  // On disconnect → remove student
   socket.on("disconnect", async () => {
     await Student.deleteOne({ socketId: socket.id })
     console.log("Client disconnected:", socket.id)
@@ -148,6 +143,10 @@ io.on("connection", (socket) => {
 app.get("/", (req, res) => {
   res.send("Backend is running 🚀")
 })
+
+// Handle preflight for DELETE routes
+app.options("/api/students", (req, res) => res.sendStatus(200))
+app.options("/api/polls", (req, res) => res.sendStatus(200))
 
 // Delete all students
 app.delete("/api/students", async (req, res) => {
@@ -169,11 +168,11 @@ app.delete("/api/polls", async (req, res) => {
   }
 })
 
+// Get all polls
 app.get("/api/polls", async (req, res) => {
   const polls = await Poll.find().sort({ createdAt: -1 })
   res.json(polls)
 })
-
 
 // ---------------------- SERVER LISTEN ----------------------
 const PORT = process.env.PORT || 5000
