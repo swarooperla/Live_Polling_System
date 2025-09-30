@@ -5,7 +5,7 @@ import axios from "axios"
 import { toast } from "react-toastify"
 import ConfirmModal from "./ConfirmModal"
 
-const BACKEND_URL = "https://live-polling-system-2-itph.onrender.com"
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
 
 export default function TeacherDashboard() {
   const navigate = useNavigate()

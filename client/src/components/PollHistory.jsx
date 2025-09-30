@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react"
 import axios from "axios"
 import "./PollHistory.css"
 
-const BACKEND_URL = "https://live-polling-system-2-itph.onrender.com"
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
 
 export default function PollHistory() {
   const [polls, setPolls] = useState([])
